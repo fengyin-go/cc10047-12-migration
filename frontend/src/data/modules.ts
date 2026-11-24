@@ -200,6 +200,28 @@ export const MODULES: ModuleMeta[] = [
     actionTargets: {"发起审计": "审计中", "确认报告": "已通过"},
     metrics: ["报告总数", "已通过审计", "未通过审计"],
   },
+  {
+    key: "key_definition",
+    name: "主键定义版本",
+    entity: "主键定义版本",
+    desc: "维护湖表可核对的主键定义版本（V1：order_id；V2：merchant_id+order_id），旧版本规则保留可查",
+    fields: ["定义标识", "目标湖表", "主键版本", "主键列", "键格式模板", "兼容模式", "生效批次", "登记时间"],
+    statuses: ["草稿", "待校验", "已启用", "已停用"],
+    actions: ["提交校验", "启用版本", "停用版本"],
+    actionTargets: {"提交校验": "待校验", "启用版本": "已启用", "停用版本": "已停用"},
+    metrics: ["定义总数", "待校验定义", "已启用定义"],
+  },
+  {
+    key: "migration_review",
+    name: "迁移复核待办",
+    entity: "迁移复核待办",
+    desc: "接收批流合并实际写入回执，核对同号订单与旧批次实际采用的主键版本",
+    fields: ["待办标识", "目标湖表", "关联回执", "批次号", "主键版本", "同号订单", "核对状态", "创建时间"],
+    statuses: ["待核对", "核对中", "已核对", "已关闭"],
+    actions: ["开始核对", "确认核对", "关闭待办"],
+    actionTargets: {"开始核对": "核对中", "确认核对": "已核对", "关闭待办": "已关闭"},
+    metrics: ["待办总数", "待核对待办", "已核对待办"],
+  },
 ]
 
 export const MODULE_BY_KEY: Map<string, ModuleMeta> = new Map(

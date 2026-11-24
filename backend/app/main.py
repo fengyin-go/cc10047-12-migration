@@ -34,6 +34,16 @@ def overview() -> dict[str, object]:
     return store.overview()
 
 
+@app.on_event("startup")
+def bootstrap_key_definitions() -> None:
+    """启动时把已登记的主键定义版本（含 V1 存量规则）同步进共享注册表。"""
+    from app.services import service_for
+
+    key_service = service_for("key_definition")
+    if key_service is not None:
+        key_service.bootstrap_registry()
+
+
 # 资源路由含 /api/{module}，必须放在 health / overview 之后注册，
 # 否则固定路径会被动态路径抢先匹配。
 for module in ROUTERS:

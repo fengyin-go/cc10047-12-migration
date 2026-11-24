@@ -68,6 +68,32 @@ npm run dev
 | 格式迁移 | `iceberg_migrate` | 迁移计划 | 计划标识、源格式、目标格式 |
 | 表目录同步 | `table_catalog` | 同步记录 | 记录标识、来源Catalog、目标Catalog |
 | 湖仓审计 | `lake_audit` | 审计报告 | 报告标识、审计范围、审计时间 |
+| 主键定义版本 | `key_definition` | 主键定义版本 | 定义标识、目标湖表、主键版本、键格式模板、生效批次 |
+| 迁移复核待办 | `migration_review` | 迁移复核待办 | 待办标识、目标湖表、关联回执、批次号、主键版本 |
+
+## 湖表主键格式迁移（V1 → V2）
+
+历史湖表主键从仅用 `order_id` 的 V1 存量格式，迁移到可区分
+`merchant_id` 与 `order_id` 的 V2 存量兼容格式，迁移涉及
+**湖表定义**与**批流合并**两个入口，全部产出可核对的版本与回执。
+
+- 主键定义版本（`app/key_versioning.py`）
+  - V1 键格式：`{order_id}`；V2 键格式：`{merchant_id}||{order_id}`；
+  - 每个版本带生效批次，旧版本（V1）在 V2 启用后仍保留、可回查原规则；
+  - 写入回执台账按 `(管道, 批次)` 幂等，相同批次并发恢复只写一次；
+  - V2 下无法核实商户来源的订单进入回查队列，补录商户后按 V2 重算主键。
+- 湖表定义入口：`POST /api/migration/tables/{id}/migrate-primary-key`
+- 批流合并入口：`POST /api/migration/pipelines/{id}/orders/batches/{batch_no}`
+- 回执追查：`GET /api/migration/pipelines/{id}/batches/{batch_no}/trace`
+
+旧版本已领取的批次在切换后重新处理时，始终按回执记录的原主键规则解释，
+实际版本归属以写入回执为准，复核待办同步接收每笔实际写入回执。
+
+可直接运行的交接核对脚本（V1 订单19 → V2 同号订单 A/B → 原批次重处理两次）：
+
+```bash
+cd backend && .venv/bin/python -I scripts/verify_key_migration.py
+```
 
 ## 约定
 
